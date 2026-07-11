@@ -1,5 +1,11 @@
 # Survival Clicker Remake — Plan
 
+> **Status: complete.** All build-order steps (1–9) are done. The engine is a
+> verified faithful port of `script.js` (locked by a 100-tick bit-for-bit
+> simulation test against an independent transcription of the original loop),
+> all 13 data tabs match `index.jade`, and the app builds and deploys to
+> GitHub Pages. See `README.md`.
+
 A modern remake of the legacy [survival-clicker](https://github.com/mantas6/survival-clicker)
 (jQuery + Bootstrap + Pug) as a React + TypeScript + Vite app.
 
