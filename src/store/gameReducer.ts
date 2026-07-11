@@ -76,6 +76,21 @@ export function isTabUnlocked(game: GameState, tab: Tab): boolean {
 }
 
 /**
+ * Whether a tab should appear in the tab bar *right now*.
+ *
+ * - Free tabs (no `unlockCost`, or `0`) are always visible.
+ * - Already-unlocked (fee paid) tabs are always visible, even if money later
+ *   drops below the original fee.
+ * - Priced-but-locked tabs are visible only while the player can currently
+ *   afford the fee (`money >= unlockCost`) — so they appear the second the
+ *   money is there and vanish again if it drops before the fee is paid.
+ */
+export function isTabVisible(game: GameState, tab: Tab): boolean {
+  if (isTabUnlocked(game, tab)) return true
+  return game.money >= (tab.unlockCost ?? 0)
+}
+
+/**
  * Persist reveal-when-first-affordable: any priced consumable (no `buyname`,
  * no `unlock`) that is now affordable is flagged in `game.unlocked` so it stays
  * visible even after money drops. Mirrors the original `updateStatus()` reveal

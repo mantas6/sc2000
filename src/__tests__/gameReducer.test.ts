@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { common } from '../data/common'
 import { medical } from '../data/medical'
 import { createInitialState } from '../game/initialState'
 import type { GameState } from '../game/types'
@@ -7,6 +8,7 @@ import {
   createStoreState,
   gameReducer,
   isTabUnlocked,
+  isTabVisible,
   tabUnlockKey,
 } from '../store/gameReducer'
 
@@ -145,6 +147,56 @@ describe('gameReducer — UNLOCK_TAB (one-time fee)', () => {
     const s = store({ money: 5000, pause: true })
     const next = gameReducer(s, { type: 'UNLOCK_TAB', tab: medical })
     expect(next).toBe(s)
+  })
+})
+
+describe('isTabVisible (visibility tracks current money)', () => {
+  const fee = medical.unlockCost! // 2000
+
+  it('always shows free/no-cost tabs', () => {
+    const s = store({ money: 0 })
+    expect(isTabVisible(s.game, common)).toBe(true)
+  })
+
+  it('hides a priced tab while its fee is unaffordable', () => {
+    const s = store({ money: fee - 1 })
+    expect(isTabVisible(s.game, medical)).toBe(false)
+  })
+
+  it('shows a priced tab the moment the fee becomes affordable', () => {
+    const s = store({ money: fee })
+    expect(isTabVisible(s.game, medical)).toBe(true)
+    // Still not actually unlocked — only visible.
+    expect(isTabUnlocked(s.game, medical)).toBe(false)
+  })
+
+  it('keeps an unlocked tab visible even after money drops below the fee', () => {
+    const unlocked = gameReducer(store({ money: fee }), {
+      type: 'UNLOCK_TAB',
+      tab: medical,
+    })
+    // Fee was paid, money is now well below the original cost.
+    expect(unlocked.game.money).toBe(0)
+    expect(isTabUnlocked(unlocked.game, medical)).toBe(true)
+    expect(isTabVisible(unlocked.game, medical)).toBe(true)
+  })
+
+  it('hides a still-locked tab again once money drops below the fee', () => {
+    // Afforded (visible) then spent down without ever unlocking.
+    const rich = store({ money: fee })
+    expect(isTabVisible(rich.game, medical)).toBe(true)
+    const poor = store({ money: fee - 1 })
+    expect(isTabUnlocked(poor.game, medical)).toBe(false)
+    expect(isTabVisible(poor.game, medical)).toBe(false)
+  })
+
+  it('selected-tab fallback: the first visible tab is always the free tab', () => {
+    // Emulates the component fallback: filter to visible tabs, pick the first.
+    const s = store({ money: 0 })
+    const visible = [common, medical].filter((t) => isTabVisible(s.game, t))
+    expect(visible).toContain(common)
+    expect(visible).not.toContain(medical)
+    expect(visible[0]).toBe(common)
   })
 })
 

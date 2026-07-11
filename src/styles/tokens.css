@@ -1,0 +1,89 @@
+/*
+ * Design tokens — the single source of truth for the "life-support console"
+ * visual language (step 8 redesign).
+ *
+ * The game is about keeping a fragile body's vitals off the floor, so the whole
+ * UI is styled like a clinical patient monitor: a cool near-black shell, a
+ * phosphor-mint interactive accent, six distinct vital hues, and monospace
+ * tabular numerics for anything that reads as telemetry.
+ */
+
+:root {
+  /* ---- Shell / surfaces (cool charcoal, faint blue-green cast) ---------- */
+  --bg: #0a0d10;
+  --bg-grid: rgba(120, 200, 190, 0.03);
+  --surface: #12171d;
+  --surface-2: #1a212a;
+  --surface-3: #222c37;
+  --line: #28323f;
+  --line-soft: #1e262f;
+  --line-strong: #3a4757;
+
+  /* ---- Text ------------------------------------------------------------- */
+  --text: #e7ecf2;
+  --text-dim: #9aa6b4;
+  --text-faint: #616e7d;
+
+  /* ---- Interactive accent (phosphor mint — the "monitor is live" colour) - */
+  --accent: #3ad6b4;
+  --accent-strong: #4ee6c4;
+  --accent-ink: #04140f;
+  --accent-glow: rgba(58, 214, 180, 0.28);
+
+  /* ---- Semantic --------------------------------------------------------- */
+  --danger: #ff5d6b;
+  --danger-dim: #7a2a33;
+  --good: #57d68a;
+  --warn: #f2b13d;
+
+  /* ---- Vital signs (six distinct hues, one per body stat) --------------- */
+  --vital-health: #ff5d6b; /* red    */
+  --vital-hydration: #3fb4e8; /* blue   */
+  --vital-energy: #f2cd4c; /* yellow */
+  --vital-stamina: #57d68a; /* green  */
+  --vital-stomach: #e8894a; /* orange */
+  --vital-temp: #b98cff; /* violet */
+
+  /* ---- Spacing scale (4px base) ---------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* ---- Radius ----------------------------------------------------------- */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-full: 999px;
+
+  /* ---- Type ------------------------------------------------------------- */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  --fs-xs: 11px;
+  --fs-sm: 12.5px;
+  --fs-base: 14px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 27px;
+
+  --lh-tight: 1.15;
+  --lh-base: 1.45;
+
+  /* Uniform tracking for the uppercase "console label" treatment. */
+  --track-label: 0.12em;
+
+  /* ---- Elevation / depth ----------------------------------------------- */
+  --shadow-1: 0 1px 0 rgba(255, 255, 255, 0.02), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --inset-track: inset 0 1px 2px rgba(0, 0, 0, 0.55);
+
+  /* ---- Motion ----------------------------------------------------------- */
+  --t-fast: 120ms;
+  --t-med: 220ms;
+  --t-bar: 380ms;
+  --ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+}

@@ -1,0 +1,143 @@
+/*
+ * App shell + header ("console" top bar).
+ *
+ * Layout: a full-bleed device with a fixed instrument header, then a two-column
+ * body — a sticky left rail (monitor + vitals + thoughts) and the main action
+ * area. Collapses to a single column on narrow screens.
+ */
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.app__body {
+  display: grid;
+  grid-template-columns: minmax(300px, 360px) 1fr;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  align-items: start;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.app__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  position: sticky;
+  top: var(--sp-4);
+}
+
+@media (max-width: 860px) {
+  .app__body {
+    grid-template-columns: 1fr;
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+  }
+  .app__side {
+    position: static;
+  }
+}
+
+/* ----------------------------------------------------------------- Header */
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-4);
+  background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--line);
+  box-shadow: var(--shadow-1);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.header__brand {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  padding-right: var(--sp-4);
+  border-right: 1px solid var(--line-soft);
+}
+
+.header__title {
+  font-weight: 700;
+  font-size: var(--fs-md);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.header__version {
+  font-family: var(--font-mono);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: var(--fs-md);
+  letter-spacing: 0.06em;
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+.header__stats {
+  display: flex;
+  gap: var(--sp-5);
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.header__stat {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--sp-2);
+  align-items: center;
+}
+
+.header__stat svg {
+  grid-row: 1 / span 2;
+  color: var(--text-faint);
+}
+
+.header__stat dt {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--text-faint);
+}
+
+.header__stat dd {
+  margin: 0;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  font-size: var(--fs-sm);
+}
+
+.header__controls {
+  margin-left: auto;
+  display: flex;
+  gap: var(--sp-2);
+}
+
+@media (max-width: 860px) {
+  .header {
+    gap: var(--sp-3);
+  }
+  .header__brand {
+    border-right: none;
+    padding-right: 0;
+  }
+  .header__stats {
+    gap: var(--sp-4);
+    order: 3;
+    width: 100%;
+  }
+  .header__controls {
+    margin-left: auto;
+  }
+}

@@ -1,0 +1,122 @@
+/*
+ * Overlays: the death / reset confirmation modals and the dev-only icon
+ * gallery.
+ */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 7, 10, 0.72);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: var(--sp-4);
+  animation: overlay-in var(--t-med) var(--ease);
+}
+
+.modal {
+  width: min(440px, 100%);
+  padding: var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2);
+  animation: modal-in var(--t-med) var(--ease);
+}
+
+.modal__title {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-lg);
+}
+
+.modal__title svg {
+  color: var(--danger);
+}
+
+.modal__body {
+  margin: 0 0 var(--sp-4);
+  color: var(--text-dim);
+}
+
+.modal__summary {
+  display: flex;
+  gap: var(--sp-6);
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+}
+
+.modal__summary dt {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  color: var(--text-faint);
+  margin-bottom: 2px;
+}
+
+.modal__summary dd {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+}
+
+/* ------------------------------------------------------------------ Gallery */
+
+.gallery {
+  padding: var(--sp-6);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.gallery__title {
+  font-size: var(--fs-lg);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  margin: 0 0 var(--sp-5);
+}
+
+.gallery__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--sp-3);
+}
+
+.gallery__cell {
+  margin: 0;
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  text-align: center;
+}
+
+.gallery__sizes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  min-height: 48px;
+  color: var(--accent);
+}
+
+.gallery__cell figcaption {
+  margin-top: var(--sp-2);
+  color: var(--text-dim);
+  font-size: var(--fs-sm);
+  font-family: var(--font-mono);
+}
