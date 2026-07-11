@@ -49,11 +49,12 @@ export function Clock(props: IconProps) {
   )
 }
 
-/** Digested — a funnel narrowing to a spout (throughput of matter). */
+/** Digested — a symmetric funnel narrowing to a spout (throughput of matter). */
 export function Digested(props: IconProps) {
   return (
     <Icon {...props}>
-      <path d="M3 4 H21 L14 12 V19 L10 21 V12 Z" />
+      <path d="M4 4 H20 L13 13 V20 L11 20 V13 Z" />
+      <path d="M8 8 H16" />
     </Icon>
   )
 }

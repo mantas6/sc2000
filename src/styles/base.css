@@ -47,18 +47,27 @@ button {
   color: inherit;
 }
 
-/* Utility "console label": tiny uppercase tracked caption used everywhere. */
-.eyebrow {
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--text-faint);
-}
-
 /* Anything that reads as a number/measurement uses the mono/tabular face. */
 .num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Visually-hidden but still in the accessibility tree + DOM. Used to keep
+ * stat/effect names available to screen readers (and tests) while the visible
+ * UI leans on icons + numbers to cut textual noise.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* --------------------------------------------------------------- Buttons */

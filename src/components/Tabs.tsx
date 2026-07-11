@@ -43,6 +43,8 @@ export function Tabs() {
               type="button"
               role="tab"
               aria-selected={active}
+              aria-label={tab.label}
+              title={tab.label}
               className="tabs__tab"
               data-active={active}
               data-locked={locked}

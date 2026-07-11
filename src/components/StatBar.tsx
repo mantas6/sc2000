@@ -24,6 +24,8 @@ export interface StatBarProps {
   text?: string
   /** Visual tone (drives the bar/label colour via CSS). */
   tone?: 'health' | 'stamina' | 'stomach' | 'energy' | 'hydration' | 'temp'
+  /** Transient feedback cue (drives the red/green track pulse via CSS). */
+  flash?: 'damage' | 'heal' | null
 }
 
 /** Clamp a ratio into the `[0, 1]` display range. */
@@ -34,17 +36,17 @@ function clamp01(x: number): number {
   return x
 }
 
-export function StatBar({ icon: Glyph, label, value, cap, text, tone }: StatBarProps) {
+export function StatBar({ icon: Glyph, label, value, cap, text, tone, flash }: StatBarProps) {
   const readout =
     text ?? (cap !== undefined ? `${Math.round(value)} / ${Math.round(cap)}` : String(Math.round(value)))
   const pct = cap !== undefined ? clamp01(value / cap) * 100 : null
 
   return (
-    <div className="stat-bar" data-tone={tone}>
+    <div className="stat-bar" data-tone={tone} data-flash={flash ?? undefined} title={label}>
       <span className="stat-bar__icon" aria-hidden="true">
         <Glyph size={18} />
       </span>
-      <span className="stat-bar__label">{label}</span>
+      <span className="stat-bar__label sr-only">{label}</span>
       {pct !== null ? (
         <span
           className="stat-bar__track"

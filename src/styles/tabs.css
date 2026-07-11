@@ -40,15 +40,41 @@
 .tabs__tab svg {
   color: var(--text-faint);
   transition: color var(--t-fast) var(--ease);
+  flex: none;
 }
 
-.tabs__tab:hover {
+/*
+ * Icon-first tab strip: the text label is collapsed by default and only
+ * revealed for the active tab or on hover/focus, so the bar reads as a clean
+ * row of glyphs. The label stays in the DOM (aria-label + title cover a11y).
+ */
+.tabs__label {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition:
+    max-width var(--t-med) var(--ease),
+    opacity var(--t-fast) var(--ease);
+}
+
+.tabs__tab:hover,
+.tabs__tab:focus-visible {
   background: var(--surface-3);
   color: var(--text);
 }
 
-.tabs__tab:hover svg {
+.tabs__tab:hover svg,
+.tabs__tab:focus-visible svg {
   color: var(--text-dim);
+}
+
+.tabs__tab:hover .tabs__label,
+.tabs__tab:focus-visible .tabs__label,
+.tabs__tab[data-active='true'] .tabs__label {
+  max-width: 12ch;
+  opacity: 1;
 }
 
 .tabs__tab[data-active='true'] {

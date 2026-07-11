@@ -1,0 +1,176 @@
+/*
+ * Motion + feedback layer (step 8): shared keyframes, the money change-flash,
+ * and the damage / heal cues on the health bar and the character monitor frame.
+ *
+ * Everything here is decorative. The final `prefers-reduced-motion` block
+ * neutralises all of it so the console reads as static telemetry for users who
+ * ask for reduced motion.
+ */
+
+/* --------------------------------------------------------------- Keyframes */
+
+/* The "monitor is live" heartbeat dot in the vitals heading. */
+@keyframes monitor-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+}
+
+/* Overlay + modal entrance. */
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Money gained — a brief lift + accent/green glow. */
+@keyframes money-up {
+  0% {
+    color: var(--good);
+    text-shadow: 0 0 14px color-mix(in srgb, var(--good) 60%, transparent);
+    transform: translateY(-1px);
+  }
+  100% {
+    color: var(--accent-strong);
+    text-shadow: 0 0 12px var(--accent-glow);
+    transform: translateY(0);
+  }
+}
+
+/* Money spent — a brief warm/red dip. */
+@keyframes money-down {
+  0% {
+    color: var(--danger);
+    text-shadow: 0 0 14px color-mix(in srgb, var(--danger) 60%, transparent);
+    transform: translateY(1px);
+  }
+  100% {
+    color: var(--accent-strong);
+    text-shadow: 0 0 12px var(--accent-glow);
+    transform: translateY(0);
+  }
+}
+
+/* Health lost — a red pulse across the bar track. */
+@keyframes stat-hit {
+  0% {
+    box-shadow: var(--inset-track), 0 0 0 1px transparent;
+    background: var(--surface-2);
+  }
+  35% {
+    box-shadow: var(--inset-track), 0 0 0 1px var(--danger),
+      0 0 14px color-mix(in srgb, var(--danger) 55%, transparent);
+    background: color-mix(in srgb, var(--danger) 22%, var(--surface-2));
+  }
+  100% {
+    box-shadow: var(--inset-track), 0 0 0 1px transparent;
+    background: var(--surface-2);
+  }
+}
+
+/* Health regained — a softer green cue. */
+@keyframes stat-heal {
+  0% {
+    box-shadow: var(--inset-track), 0 0 0 1px transparent;
+    background: var(--surface-2);
+  }
+  40% {
+    box-shadow: var(--inset-track), 0 0 10px color-mix(in srgb, var(--good) 45%, transparent);
+    background: color-mix(in srgb, var(--good) 16%, var(--surface-2));
+  }
+  100% {
+    box-shadow: var(--inset-track), 0 0 0 1px transparent;
+    background: var(--surface-2);
+  }
+}
+
+/* Character monitor frame — red flash on damage. */
+@keyframes frame-hit {
+  0% {
+    box-shadow: var(--shadow-1), inset 0 0 0 0 transparent;
+    border-color: var(--line);
+  }
+  30% {
+    box-shadow: var(--shadow-1), inset 0 0 34px color-mix(in srgb, var(--danger) 42%, transparent);
+    border-color: var(--danger);
+  }
+  100% {
+    box-shadow: var(--shadow-1), inset 0 0 0 0 transparent;
+    border-color: var(--line);
+  }
+}
+
+/* Character monitor frame — green cue on heal. */
+@keyframes frame-heal {
+  0% {
+    box-shadow: var(--shadow-1), inset 0 0 0 0 transparent;
+    border-color: var(--line);
+  }
+  40% {
+    box-shadow: var(--shadow-1), inset 0 0 26px color-mix(in srgb, var(--good) 30%, transparent);
+    border-color: color-mix(in srgb, var(--good) 60%, var(--line));
+  }
+  100% {
+    box-shadow: var(--shadow-1), inset 0 0 0 0 transparent;
+    border-color: var(--line);
+  }
+}
+
+/* ----------------------------------------------------------- Cue bindings */
+
+/* Money value re-mounts on change (keyed by React), replaying the flash. */
+.hud__money-value[data-flash='up'] {
+  animation: money-up var(--t-med) var(--ease);
+}
+.hud__money-value[data-flash='down'] {
+  animation: money-down var(--t-med) var(--ease);
+}
+
+/* Health bar track flashes when the underlying value jumps between ticks. */
+.stat-bar[data-flash='damage'] .stat-bar__track {
+  animation: stat-hit 600ms var(--ease);
+}
+.stat-bar[data-flash='heal'] .stat-bar__track {
+  animation: stat-heal 600ms var(--ease);
+}
+
+/* Character monitor frame cue, driven by a data attribute from the canvas. */
+.character[data-flash='damage'] {
+  animation: frame-hit 500ms var(--ease);
+}
+.character[data-flash='heal'] {
+  animation: frame-heal 600ms var(--ease);
+}
+
+/* ------------------------------------------------------- Reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

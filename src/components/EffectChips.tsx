@@ -92,7 +92,9 @@ export function EffectChips({ effects, set }: EffectChipsProps) {
           <li key={key} className="chip" data-dir={positive ? 'up' : 'down'} title={STAT_LABELS[stat]}>
             <Arrow size={12} />
             {Glyph ? <Glyph size={12} /> : null}
-            <span className="chip__label">{STAT_LABELS[stat]}</span>
+            {/* When a glyph identifies the stat, drop the visible label to cut
+                noise but keep it for screen readers + the chip tooltip. */}
+            <span className={Glyph ? 'chip__label sr-only' : 'chip__label'}>{STAT_LABELS[stat]}</span>
             <span className="chip__value">
               {assign ? '=' : positive ? '+' : ''}
               {fmt(value)}

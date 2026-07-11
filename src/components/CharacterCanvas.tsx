@@ -21,9 +21,10 @@ import { deriveAppearance, drawCharacter } from '../game/render/character'
 import { useGame } from '../store/GameContext'
 import type { StoreState } from '../store/gameReducer'
 
-/** Seconds over which a triggered vomit / damage cue fades back to 0. */
+/** Seconds over which a triggered vomit / damage / heal cue fades back to 0. */
 const VOMIT_DECAY = 1.6
 const DAMAGE_DECAY = 0.5
+const HEAL_DECAY = 0.6
 
 export function CharacterCanvas() {
   const { state } = useGame()
@@ -33,6 +34,8 @@ export function CharacterCanvas() {
   stateRef.current = state
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  // Wrapper element gets a transient `data-flash` so the CSS frame cue fires.
+  const frameRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -70,6 +73,9 @@ export function CharacterCanvas() {
     let prevDeath = stateRef.current.death
     let vomitCue = 0
     let damageCue = 0
+    let healCue = 0
+    // Last written frame-cue attribute, to avoid redundant DOM writes.
+    let frameFlash = ''
 
     const startMs = performance.now()
     let lastMs = startMs
@@ -93,6 +99,10 @@ export function CharacterCanvas() {
         if (g.health < prevHealth - 0.5) {
           damageCue = 1
         }
+        // Heal: a noticeable health gain between ticks (green cue).
+        if (g.health > prevHealth + 0.5) {
+          healCue = 1
+        }
         prevStomachRatio = stomachRatio
         prevHealth = g.health
         prevTime = g.time
@@ -106,6 +116,18 @@ export function CharacterCanvas() {
       // Decay the transient cues toward 0.
       vomitCue = Math.max(0, vomitCue - dt / VOMIT_DECAY)
       damageCue = Math.max(0, damageCue - dt / DAMAGE_DECAY)
+      healCue = Math.max(0, healCue - dt / HEAL_DECAY)
+
+      // Reflect the strongest active cue onto the wrapper frame (damage wins).
+      const nextFlash = damageCue > 0.15 ? 'damage' : healCue > 0.15 ? 'heal' : ''
+      if (nextFlash !== frameFlash) {
+        frameFlash = nextFlash
+        const frame = frameRef.current
+        if (frame) {
+          if (nextFlash) frame.dataset.flash = nextFlash
+          else delete frame.dataset.flash
+        }
+      }
 
       const appearance = deriveAppearance(g)
       appearance.vomit = vomitCue
@@ -134,7 +156,7 @@ export function CharacterCanvas() {
   }, [])
 
   return (
-    <div className="character" aria-hidden="true">
+    <div className="character" ref={frameRef} aria-hidden="true">
       <canvas ref={canvasRef} className="character__canvas" />
     </div>
   )

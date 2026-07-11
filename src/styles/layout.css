@@ -82,40 +82,92 @@
   text-shadow: 0 0 12px var(--accent-glow);
 }
 
-.header__stats {
+/* --------------------------------------------------- Money (the hero stat) */
+
+.hud__money {
   display: flex;
-  gap: var(--sp-5);
-  margin: 0;
-  flex-wrap: wrap;
-}
-
-.header__stat {
-  display: grid;
-  grid-template-columns: auto auto;
-  grid-template-rows: auto auto;
-  column-gap: var(--sp-2);
   align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background:
+    radial-gradient(120% 160% at 0% 50%, var(--accent-glow), transparent 60%),
+    var(--surface-2);
+  box-shadow: var(--shadow-1);
 }
 
-.header__stat svg {
-  grid-row: 1 / span 2;
-  color: var(--text-faint);
+.hud__money > svg {
+  color: var(--accent);
+  filter: drop-shadow(0 0 8px var(--accent-glow));
+  flex: none;
 }
 
-.header__stat dt {
-  font-size: var(--fs-xs);
-  text-transform: uppercase;
-  letter-spacing: var(--track-label);
-  color: var(--text-faint);
+.hud__money-main {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
 }
 
-.header__stat dd {
-  margin: 0;
-  font-weight: 600;
+.hud__money-value {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  color: var(--text);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--accent-strong);
+  text-shadow: 0 0 12px var(--accent-glow);
+}
+
+.hud__money-sub {
+  display: flex;
+  gap: var(--sp-3);
+  margin-top: 2px;
+}
+
+.hud__sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  color: var(--text-dim);
+}
+
+.hud__sub svg {
+  color: var(--text-faint);
+}
+
+/* --------------------------------------------------- Secondary meta chips */
+
+.hud__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+}
+
+.hud__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-full);
+  background: var(--surface-2);
+  color: var(--text-dim);
+}
+
+.hud__chip svg {
+  color: var(--text-faint);
+  flex: none;
+}
+
+.hud__chip dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: var(--fs-sm);
+  color: var(--text);
 }
 
 .header__controls {
@@ -132,10 +184,12 @@
     border-right: none;
     padding-right: 0;
   }
-  .header__stats {
-    gap: var(--sp-4);
+  .hud__money {
     order: 3;
     width: 100%;
+  }
+  .hud__meta {
+    order: 4;
   }
   .header__controls {
     margin-left: auto;
