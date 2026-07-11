@@ -11,19 +11,25 @@ import { Gallery } from './components/icons/Gallery'
 import { CharacterCanvas } from './components/CharacterCanvas'
 import { DeathModal } from './components/DeathModal'
 import { Header } from './components/Header'
+import { HintBar } from './components/HintBar'
+import { OfflineModal } from './components/OfflineModal'
 import { StatsPanel } from './components/StatsPanel'
 import { Tabs } from './components/Tabs'
 import { ThoughtsLog } from './components/ThoughtsLog'
+import { WelcomeModal } from './components/WelcomeModal'
 import { useGameLoop } from './hooks/useGameLoop'
+import { useSpaceAction } from './hooks/useSpaceAction'
 import { GameProvider } from './store/GameContext'
 
 /** The running game — must be a child of `GameProvider` (uses the store). */
 function Game() {
   useGameLoop()
+  useSpaceAction()
 
   return (
     <div className="app">
       <Header />
+      <HintBar />
       <div className="app__body">
         <aside className="app__side">
           <CharacterCanvas />
@@ -35,6 +41,8 @@ function Game() {
         </main>
       </div>
       <DeathModal />
+      <WelcomeModal />
+      <OfflineModal />
     </div>
   )
 }

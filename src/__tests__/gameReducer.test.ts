@@ -87,6 +87,8 @@ describe('gameReducer — TICK', () => {
     const next = gameReducer(store({ health: 1, energy: 0, hydration: 0 }), { type: 'TICK' })
     expect(next.death).not.toBeNull()
     expect(next.death!.time).toBe(1)
+    // Dehydration out-damages starvation, so it owns the summary.
+    expect(next.death!.cause).toBe('dehydration')
     expect(next.game.health).toBe(1000)
     expect(next.game.time).toBe(0)
   })

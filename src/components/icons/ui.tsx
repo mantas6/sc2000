@@ -58,3 +58,13 @@ export function Brain(props: IconProps) {
     </Icon>
   )
 }
+
+/** Gear — a cog with a hub, for the settings control. */
+export function Gear(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M12 2.5 V5 M12 19 V21.5 M4.2 4.2 L6 6 M18 18 L19.8 19.8 M2.5 12 H5 M19 12 H21.5 M4.2 19.8 L6 18 M18 6 L19.8 4.2" />
+    </Icon>
+  )
+}

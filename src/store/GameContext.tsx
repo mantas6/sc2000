@@ -15,7 +15,9 @@ import {
   type Dispatch,
   type ReactNode,
 } from 'react'
+import { computeOffline } from '../game/offline'
 import { load } from '../game/persistence'
+import { isOfflineEnabled } from '../game/settings'
 import type { GameAction, Item, Tab } from '../game/types'
 import { createStoreState, gameReducer, type StoreState } from './gameReducer'
 
@@ -35,14 +37,24 @@ export interface GameContextValue {
   reset: () => void
   /** Dismiss the pending death summary (close the modal). */
   dismissDeath: () => void
+  /** Dismiss the offline catch-up summary (close the "Welcome back" modal). */
+  dismissOffline: () => void
 }
 
 const GameContext = createContext<GameContextValue | null>(null)
 
-/** Seed the store from a persisted save, falling back to a fresh game. */
+/**
+ * Seed the store from a persisted save, falling back to a fresh game. When a
+ * save exists and offline progression is enabled, the missed time is simulated
+ * up-front (capped, never-die) and its summary is stashed for the "Welcome
+ * back" modal.
+ */
 function initStore(): StoreState {
   const saved = load()
-  return saved ? createStoreState(saved) : createStoreState()
+  if (!saved) return createStoreState()
+  if (!isOfflineEnabled()) return createStoreState(saved.state)
+  const { state, summary } = computeOffline(saved.state, saved.savedAt, Date.now())
+  return createStoreState(state, summary.ticks > 0 ? summary : null)
 }
 
 /** Provider that owns the reducer and exposes it via context. */
@@ -54,10 +66,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const togglePause = useCallback(() => dispatch({ type: 'TOGGLE_PAUSE' }), [])
   const reset = useCallback(() => dispatch({ type: 'RESET' }), [])
   const dismissDeath = useCallback(() => dispatch({ type: 'DISMISS_DEATH' }), [])
+  const dismissOffline = useCallback(() => dispatch({ type: 'DISMISS_OFFLINE' }), [])
 
   const value = useMemo<GameContextValue>(
-    () => ({ state, dispatch, applyItem, unlockTab, togglePause, reset, dismissDeath }),
-    [state, applyItem, unlockTab, togglePause, reset, dismissDeath],
+    () => ({
+      state,
+      dispatch,
+      applyItem,
+      unlockTab,
+      togglePause,
+      reset,
+      dismissDeath,
+      dismissOffline,
+    }),
+    [state, applyItem, unlockTab, togglePause, reset, dismissDeath, dismissOffline],
   )
 
   return <GameContext.Provider value={value}>{children}</GameContext.Provider>

@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { formatTemp } from '../game/format'
+import { statDanger } from '../game/guidance'
 import { statIcon } from '../ui/icons'
 import { useGame } from '../store/GameContext'
 import { StatBar } from './StatBar'
@@ -48,19 +49,49 @@ export function StatsPanel() {
         value={g.health}
         cap={g.healthcap}
         flash={healthFlash}
+        danger={statDanger('health', g)}
       />
-      <StatBar icon={statIcon.stamina!} label="Stamina" tone="stamina" value={g.stamina} cap={g.staminacap} />
-      <StatBar icon={statIcon.stomach!} label="Stomach" tone="stomach" value={g.stomach} cap={g.stomachcap} />
-      <StatBar icon={statIcon.energy!} label="Energy" tone="energy" value={g.energy} cap={g.energycap} />
+      <StatBar
+        icon={statIcon.stamina!}
+        label="Stamina"
+        tone="stamina"
+        value={g.stamina}
+        cap={g.staminacap}
+        danger={statDanger('stamina', g)}
+      />
+      <StatBar
+        icon={statIcon.stomach!}
+        label="Stomach"
+        tone="stomach"
+        value={g.stomach}
+        cap={g.stomachcap}
+        danger={statDanger('stomach', g)}
+      />
+      <StatBar
+        icon={statIcon.energy!}
+        label="Energy"
+        tone="energy"
+        value={g.energy}
+        cap={g.energycap}
+        danger={statDanger('energy', g)}
+      />
       <StatBar
         icon={statIcon.hydration!}
         label="Hydration"
         tone="hydration"
         value={g.hydration}
         cap={g.hydrationcap}
+        danger={statDanger('hydration', g)}
       />
       <div className="stats-panel__temp" data-temp={tempTone(g.temp)}>
-        <StatBar icon={statIcon.temp!} label="Temperature" tone="temp" value={g.temp} text={formatTemp(g.temp)} />
+        <StatBar
+          icon={statIcon.temp!}
+          label="Temperature"
+          tone="temp"
+          value={g.temp}
+          text={formatTemp(g.temp)}
+          danger={statDanger('temp', g)}
+        />
       </div>
     </section>
   )

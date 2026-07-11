@@ -6,6 +6,7 @@
  * `value / cap * 100%` and its text to `round(value) / round(cap)`.
  */
 
+import type { DangerLevel } from '../game/guidance'
 import type { IconComponent } from './icons'
 
 export interface StatBarProps {
@@ -26,6 +27,13 @@ export interface StatBarProps {
   tone?: 'health' | 'stamina' | 'stomach' | 'energy' | 'hydration' | 'temp'
   /** Transient feedback cue (drives the red/green track pulse via CSS). */
   flash?: 'damage' | 'heal' | null
+  /**
+   * Danger level for the vital: `'warn'` tints the bar amber, `'critical'`
+   * turns it red and pulses so danger reads at a glance. Computed by the caller
+   * (see `guidance.statDanger`) so per-vital semantics stay out of this
+   * presentational component.
+   */
+  danger?: DangerLevel
 }
 
 /** Clamp a ratio into the `[0, 1]` display range. */
@@ -36,13 +44,19 @@ function clamp01(x: number): number {
   return x
 }
 
-export function StatBar({ icon: Glyph, label, value, cap, text, tone, flash }: StatBarProps) {
+export function StatBar({ icon: Glyph, label, value, cap, text, tone, flash, danger }: StatBarProps) {
   const readout =
     text ?? (cap !== undefined ? `${Math.round(value)} / ${Math.round(cap)}` : String(Math.round(value)))
   const pct = cap !== undefined ? clamp01(value / cap) * 100 : null
 
   return (
-    <div className="stat-bar" data-tone={tone} data-flash={flash ?? undefined} title={label}>
+    <div
+      className="stat-bar"
+      data-tone={tone}
+      data-flash={flash ?? undefined}
+      data-danger={danger ?? undefined}
+      title={label}
+    >
       <span className="stat-bar__icon" aria-hidden="true">
         <Glyph size={18} />
       </span>

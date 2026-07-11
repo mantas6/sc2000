@@ -27,6 +27,28 @@ test('renders the app shell', () => {
   expect(screen.getByText('Hydration')).toBeInTheDocument()
 })
 
+test('shows the first-run welcome overlay on a fresh game and dismisses it for good', () => {
+  const { unmount } = render(<App />)
+
+  // Fresh game (no save) → the welcome primer is shown.
+  expect(screen.getByText(/Welcome to Survival Clicker/i)).toBeInTheDocument()
+
+  fireEvent.click(screen.getByRole('button', { name: /Got it/i }))
+  expect(screen.queryByText(/Welcome to Survival Clicker/i)).not.toBeInTheDocument()
+
+  // A subsequent mount never shows it again (the flag is persisted).
+  unmount()
+  cleanup()
+  render(<App />)
+  expect(screen.queryByText(/Welcome to Survival Clicker/i)).not.toBeInTheDocument()
+})
+
+test('the header exposes a Restart control (renamed from "Suicide")', () => {
+  render(<App />)
+  expect(screen.getByRole('button', { name: /Restart/i })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Suicide/i })).not.toBeInTheDocument()
+})
+
 test('clicking an affordable item dispatches APPLY_ITEM and updates money', () => {
   render(<App />)
 

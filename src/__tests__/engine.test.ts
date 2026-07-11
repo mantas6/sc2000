@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyItem, canAfford, isVisible, tick } from '../game/engine'
+import { applyItem, canAfford, determineDeathCause, isVisible, tick } from '../game/engine'
 import { createInitialState } from '../game/initialState'
 import { think } from '../game/thoughts'
 import type { GameState, Item } from '../game/types'
@@ -305,6 +305,49 @@ describe('tick — death and reset', () => {
     expect(result.state.health).toBe(1000)
     expect(result.state.time).toBe(0)
     expect(result.state.money).toBe(0)
+  })
+})
+
+describe('determineDeathCause', () => {
+  it('attributes an emptied hydration to dehydration', () => {
+    expect(determineDeathCause(base({ hydration: 0, energy: 250, stomach: 100 }))).toBe('dehydration')
+  })
+
+  it('attributes an emptied energy to starvation', () => {
+    expect(determineDeathCause(base({ energy: 0, hydration: 250, stomach: 100 }))).toBe('starvation')
+  })
+
+  it('attributes extreme heat to hyperthermia', () => {
+    expect(determineDeathCause(base({ temp: 42 }))).toBe('hyperthermia')
+    expect(determineDeathCause(base({ temp: 40 }))).toBe('hyperthermia')
+  })
+
+  it('attributes extreme cold to hypothermia', () => {
+    expect(determineDeathCause(base({ temp: 30 }))).toBe('hypothermia')
+    expect(determineDeathCause(base({ temp: 33 }))).toBe('hypothermia')
+  })
+
+  it('attributes a spent stamina cap to exhaustion', () => {
+    expect(
+      determineDeathCause(base({ staminacap: 0, stamina: 0, energy: 250, hydration: 250 })),
+    ).toBe('exhaustion')
+  })
+
+  it('falls back to injuries with no dominant depleted vital', () => {
+    expect(determineDeathCause(base())).toBe('injuries')
+  })
+
+  it('picks the most damaging condition when several are active', () => {
+    // dehydration (*0.95) out-damages starvation (*0.99) → it wins.
+    expect(determineDeathCause(base({ hydration: 0, energy: 0 }))).toBe('dehydration')
+  })
+})
+
+describe('tick — death cause on the summary', () => {
+  it('records the dominant cause in the death summary', () => {
+    const result = step(base({ health: 1, hydration: 0, energy: 250, stomach: 100 }))
+    expect(result.death).not.toBeNull()
+    expect(result.death!.cause).toBe('dehydration')
   })
 })
 

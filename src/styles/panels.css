@@ -209,6 +209,23 @@
   color: var(--tone);
 }
 
+/* ----------------------------------------------------------- Danger states */
+
+/*
+ * Low-vital warnings: amber at the warn threshold, red + pulse at critical.
+ * Overriding `--tone` recolours the icon, readout and fill together so the
+ * whole row reads as "in trouble" at a glance (the per-vital hue yields to the
+ * urgency). The pulse itself is defined in feedback.css so reduced-motion
+ * neutralises it.
+ */
+.stat-bar[data-danger='warn'] {
+  --tone: var(--warn);
+}
+
+.stat-bar[data-danger='critical'] {
+  --tone: var(--danger);
+}
+
 /* Temperature tone tint on the numeric chip (ported from updateText()). */
 .stats-panel__temp[data-temp='hot'] {
   --tone: var(--danger);

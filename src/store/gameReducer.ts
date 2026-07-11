@@ -15,6 +15,7 @@ import { tabs } from '../data/tabs'
 import type { DeathInfo } from '../game/engine'
 import { applyItem as engineApplyItem, tick as engineTick } from '../game/engine'
 import { createInitialState } from '../game/initialState'
+import type { OfflineSummary } from '../game/offline'
 import type { GameAction, GameState, Item, Tab } from '../game/types'
 
 /** Max entries retained in the rolling thoughts log. */
@@ -41,6 +42,8 @@ export interface StoreState {
   thoughts: ThoughtEntry[]
   /** Populated while a death summary awaits acknowledgement (modal), else null. */
   death: DeathInfo | null
+  /** Populated while an offline catch-up summary awaits the "Welcome back" modal. */
+  offline: OfflineSummary | null
   /** Number of ticks processed (drives autosave cadence). */
   tickCount: number
   /** Next thought id — kept in state so the reducer stays pure/deterministic. */
@@ -48,11 +51,15 @@ export interface StoreState {
 }
 
 /** Build a fresh store around a given (or fresh) game state. */
-export function createStoreState(game: GameState = createInitialState()): StoreState {
+export function createStoreState(
+  game: GameState = createInitialState(),
+  offline: OfflineSummary | null = null,
+): StoreState {
   return {
     game,
     thoughts: [],
     death: null,
+    offline,
     tickCount: 0,
     nextThoughtId: 0,
   }
@@ -148,6 +155,7 @@ export function gameReducer(state: StoreState, action: GameAction): StoreState {
         game: revealAffordable(result.state),
         thoughts,
         death: result.death ?? state.death,
+        offline: state.offline,
         tickCount: state.tickCount + 1,
         nextThoughtId,
       }
@@ -185,5 +193,9 @@ export function gameReducer(state: StoreState, action: GameAction): StoreState {
     case 'DISMISS_DEATH':
       if (state.death === null) return state
       return { ...state, death: null }
+
+    case 'DISMISS_OFFLINE':
+      if (state.offline === null) return state
+      return { ...state, offline: null }
   }
 }

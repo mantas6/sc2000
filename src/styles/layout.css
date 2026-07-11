@@ -42,6 +42,52 @@
   }
 }
 
+/* --------------------------------------------------------------- Hint bar */
+
+/*
+ * Contextual guidance strip under the header. Subtle by default (amber, faint
+ * fill) and quietly urgent when a vital is critical. Rendered only when there
+ * is something to say, so it never occupies space otherwise.
+ */
+.hint-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+  font-size: var(--fs-sm);
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 9%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--warn) 22%, var(--line-soft));
+}
+
+.hint-bar__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--warn);
+}
+
+.hint-bar__text {
+  line-height: var(--lh-tight);
+}
+
+/* Temperature and health hints read as more acute → warm red. */
+.hint-bar[data-hint='health'],
+.hint-bar[data-hint='temp-hot'],
+.hint-bar[data-hint='temp-cold'] {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-bottom-color: color-mix(in srgb, var(--danger) 24%, var(--line-soft));
+}
+
+.hint-bar[data-hint='health'] .hint-bar__icon,
+.hint-bar[data-hint='temp-hot'] .hint-bar__icon,
+.hint-bar[data-hint='temp-cold'] .hint-bar__icon {
+  color: var(--danger);
+}
+
 /* ----------------------------------------------------------------- Header */
 
 .header {

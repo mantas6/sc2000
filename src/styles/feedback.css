@@ -136,6 +136,18 @@
   }
 }
 
+/* Critically-low vital — a slow red breathing pulse on the bar track. */
+@keyframes vital-critical {
+  0%,
+  100% {
+    box-shadow: var(--inset-track), 0 0 0 1px transparent;
+  }
+  50% {
+    box-shadow: var(--inset-track), 0 0 0 1px var(--danger),
+      0 0 12px color-mix(in srgb, var(--danger) 55%, transparent);
+  }
+}
+
 /* ----------------------------------------------------------- Cue bindings */
 
 /* Money value re-mounts on change (keyed by React), replaying the flash. */
@@ -152,6 +164,12 @@
 }
 .stat-bar[data-flash='heal'] .stat-bar__track {
   animation: stat-heal 600ms var(--ease);
+}
+
+/* A critically-low vital keeps a steady red pulse until it recovers. A live
+   damage/heal flash takes precedence so the transient cue still reads. */
+.stat-bar[data-danger='critical']:not([data-flash]) .stat-bar__track {
+  animation: vital-critical 1.4s var(--ease) infinite;
 }
 
 /* Character monitor frame cue, driven by a data attribute from the canvas. */

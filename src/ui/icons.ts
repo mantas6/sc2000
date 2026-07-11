@@ -28,6 +28,7 @@ import {
   Dumbbell,
   Energy,
   Flask,
+  Gear,
   Heart,
   Home,
   Income,
@@ -93,6 +94,7 @@ export const iconByName: Record<string, IconComponent> = {
   ArrowUp,
   ArrowDown,
   Brain,
+  Gear,
 }
 
 /** Resolve a data `icon` string to a glyph, or `undefined` if unknown. */
@@ -125,4 +127,5 @@ export const roleIcon = {
   up: ArrowUp,
   down: ArrowDown,
   brain: Brain,
+  settings: Gear,
 } satisfies Record<string, IconComponent>

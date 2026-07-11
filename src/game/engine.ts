@@ -83,6 +83,19 @@ import { randp, think } from './thoughts'
 import type { GameState, Item, StatMap } from './types'
 
 /**
+ * The dominant condition that drained the character's health to zero — used to
+ * explain the death in the summary modal. `injuries` is the catch-all for a
+ * generic health collapse with no single depleted vital dominating.
+ */
+export type DeathCause =
+  | 'dehydration'
+  | 'starvation'
+  | 'hypothermia'
+  | 'hyperthermia'
+  | 'exhaustion'
+  | 'injuries'
+
+/**
  * Survival summary produced when the character dies. Replaces the original
  * `alert('You have survived for ...')`; the store surfaces it via a modal.
  */
@@ -91,6 +104,51 @@ export interface DeathInfo {
   time: number
   /** `game.digested` at the moment of death (litres, unscaled). */
   digested: number
+  /** The dominant condition responsible for the death (for the modal copy). */
+  cause: DeathCause
+}
+
+/**
+ * Read-only inspection of the death-tick state to attribute the death to a
+ * single cause. Pure and non-mutating — it never changes simulation behaviour.
+ *
+ * Each health-draining condition active at the moment of death is paired with
+ * the health multiplier the engine applies for it (a smaller multiplier means
+ * more damage). The death is attributed to the condition that did the most
+ * damage this tick; equal-damage ties fall back to the evaluation order below
+ * (most vital cause first). With no active condition the fall-back is
+ * `injuries` (a bare health collapse).
+ */
+export function determineDeathCause(g: GameState): DeathCause {
+  const factors: Array<{ cause: DeathCause; mult: number }> = []
+
+  const temp = g.temp
+  if (temp >= TEMP_LETHAL_HOT) {
+    factors.push({ cause: 'hyperthermia', mult: TEMP_LETHAL_HOT_HEALTH })
+  } else if (temp >= TEMP_DANGER_HOT) {
+    factors.push({ cause: 'hyperthermia', mult: TEMP_DANGER_HOT_HEALTH })
+  } else if (temp <= TEMP_LETHAL_COLD) {
+    factors.push({ cause: 'hypothermia', mult: TEMP_LETHAL_COLD_HEALTH })
+  } else if (temp <= TEMP_DANGER_COLD) {
+    factors.push({ cause: 'hypothermia', mult: TEMP_DANGER_COLD_HEALTH })
+  }
+
+  if (g.hydration <= 0) factors.push({ cause: 'dehydration', mult: DEHYDRATION_HEALTH })
+  if (g.energy <= 0) factors.push({ cause: 'starvation', mult: STARVATION_HEALTH })
+  if (g.stomach <= 0) factors.push({ cause: 'starvation', mult: STOMACH_EMPTY_HEALTH })
+  if (g.staminacap <= 0) factors.push({ cause: 'exhaustion', mult: STAMINACAP_DEPLETED_HEALTH })
+  if (g.hydrationcap <= 0 || g.energycap <= 0) {
+    factors.push({ cause: 'injuries', mult: CAP_DEPLETED_HEALTH })
+  }
+  if (g.stomachcap <= 0) factors.push({ cause: 'injuries', mult: STOMACHCAP_DESTROYED_HEALTH })
+
+  if (factors.length === 0) return 'injuries'
+
+  let best = factors[0]
+  for (const f of factors) {
+    if (f.mult < best.mult) best = f
+  }
+  return best.cause
 }
 
 /** Options for {@link tick}; lets callers/tests inject the RNG. */
@@ -408,7 +466,7 @@ export function tick(state: GameState, options: TickOptions = {}): TickResult {
   /* Death — capture the survival summary, then reset (original called init()
      and continued executing the remainder of the tick on the fresh state). */
   if (g.health <= DEATH_HEALTH) {
-    death = { time: g.time, digested: g.digested }
+    death = { time: g.time, digested: g.digested, cause: determineDeathCause(g) }
     g = createInitialState()
   }
 

@@ -32,6 +32,9 @@ export function ItemButton({ item }: ItemButtonProps) {
   const Glyph = getIcon(item.icon)
   const Ban = roleIcon.ban
 
+  // The basic job is bound to the Space shortcut; advertise it subtly.
+  const showSpaceHint = item.id === 'basic-work'
+
   // cost > 0 is income earned on click; cost < 0 is a price; 0 is free.
   const costText =
     item.cost > 0
@@ -52,7 +55,10 @@ export function ItemButton({ item }: ItemButtonProps) {
         <span className="item__icon" aria-hidden="true">
           {affordable ? Glyph ? <Glyph size={18} /> : null : <Ban size={18} />}
         </span>
-        <span className="item__label">{item.label}</span>
+        <span className="item__label">
+          {item.label}
+          {showSpaceHint ? <kbd className="item__kbd">Space</kbd> : null}
+        </span>
         <span className="item__cost" data-kind={item.cost > 0 ? 'income' : 'price'}>
           {costText}
         </span>

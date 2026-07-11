@@ -124,6 +124,7 @@ export interface Tab {
  * - `RESET`        — reset to a fresh initial state (was the "Suicide" button).
  * - `LOAD`         — replace state with a loaded/migrated save.
  * - `DISMISS_DEATH`— clear the pending death summary (closes the death modal).
+ * - `DISMISS_OFFLINE`— clear the offline catch-up summary (closes its modal).
  *
  * `UNLOCK_TAB` / `DISMISS_DEATH` are store-layer additions sanctioned by the
  * TODO.md cleanup section (tab entry fees → one-time unlock; `alert` → modal).
@@ -136,3 +137,4 @@ export type GameAction =
   | { type: 'RESET' }
   | { type: 'LOAD'; state: GameState }
   | { type: 'DISMISS_DEATH' }
+  | { type: 'DISMISS_OFFLINE' }

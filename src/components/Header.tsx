@@ -1,6 +1,6 @@
 /**
  * Top HUD bar: money, per-second income, tax relief, time survived and digested
- * volume, plus the pause/resume toggle and the "Suicide" (reset) control.
+ * volume, plus the pause/resume toggle and the "Restart" (reset) control.
  *
  * Values are formatted exactly as the original `updateText()`; the reset uses a
  * modal confirmation instead of the legacy `window.confirm` (per TODO cleanup).
@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from 'react'
 import { formatDigested, formatMoney, formatTaxes, formatTime } from '../game/format'
 import { roleIcon } from '../ui/icons'
 import { useGame } from '../store/GameContext'
+import { SettingsModal } from './SettingsModal'
 
 /** Money can be negative; `formatMoney` drops the sign, so re-apply it here. */
 function signedMoney(money: number): string {
@@ -21,6 +22,7 @@ export function Header() {
   const { state, togglePause, reset } = useGame()
   const g = state.game
   const [confirming, setConfirming] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // Money change-flash: bump a keyed nonce whenever money moves so the value
   // span re-mounts and replays its up/down animation (respecting reduced motion
@@ -42,6 +44,7 @@ export function Header() {
   const Clock = roleIcon.time
   const Digested = roleIcon.digested
   const Skull = roleIcon.reset
+  const Gear = roleIcon.settings
 
   const income = g.moneyincome * g.taxes
   // Hide irrelevant HUD entries to cut noise: full taxation → no relief to show;
@@ -102,9 +105,20 @@ export function Header() {
         </button>
         <button type="button" className="btn btn--danger" onClick={() => setConfirming(true)}>
           <Skull size={18} />
-          <span>Suicide</span>
+          <span>Restart</span>
+        </button>
+        <button
+          type="button"
+          className="btn btn--icon"
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Settings"
+          title="Settings"
+        >
+          <Gear size={18} />
         </button>
       </div>
+
+      {settingsOpen ? <SettingsModal onClose={() => setSettingsOpen(false)} /> : null}
 
       {confirming ? (
         <div className="modal-backdrop" role="presentation" onClick={() => setConfirming(false)}>
@@ -116,7 +130,7 @@ export function Header() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="reset-title" className="modal__title">
-              <Skull size={22} /> End it all?
+              <Skull size={22} /> Start over?
             </h2>
             <p className="modal__body">
               This resets your progress and starts a fresh life. There is no undo.
@@ -133,7 +147,7 @@ export function Header() {
                   setConfirming(false)
                 }}
               >
-                Suicide
+                Restart
               </button>
             </div>
           </div>

@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createInitialState } from '../game/initialState'
-import { SAVE_KEY, SAVE_VERSION, load, migrate, save } from '../game/persistence'
+import {
+  SAVE_KEY,
+  SAVE_VERSION,
+  clearSave,
+  exportSave,
+  importSave,
+  load,
+  migrate,
+  save,
+} from '../game/persistence'
 import type { GameState } from '../game/types'
 
 beforeEach(() => {
@@ -23,20 +32,31 @@ describe('persistence — round trip', () => {
     save(state)
     const loaded = load()
     expect(loaded).not.toBeNull()
-    expect(loaded!.money).toBe(12345.67)
-    expect(loaded!.time).toBe(890)
-    expect(loaded!.unlocked).toEqual({ 'normal-clothes': true })
-    expect(loaded!.bought).toEqual({ bricks: true, 'tab:medical': true })
-    expect(loaded!.pause).toBe(true)
+    expect(loaded!.state.money).toBe(12345.67)
+    expect(loaded!.state.time).toBe(890)
+    expect(loaded!.state.unlocked).toEqual({ 'normal-clothes': true })
+    expect(loaded!.state.bought).toEqual({ bricks: true, 'tab:medical': true })
+    expect(loaded!.state.pause).toBe(true)
   })
 
-  it('writes under the versioned key wrapped in an envelope', () => {
+  it('writes under the versioned key wrapped in a timestamped envelope', () => {
+    const before = Date.now()
     save(createInitialState())
     const raw = localStorage.getItem(SAVE_KEY)
     expect(raw).not.toBeNull()
     const parsed = JSON.parse(raw!)
     expect(parsed.version).toBe(SAVE_VERSION)
     expect(parsed.state.health).toBe(1000)
+    // The envelope now stamps the wall-clock time (drives offline catch-up).
+    expect(typeof parsed.savedAt).toBe('number')
+    expect(parsed.savedAt).toBeGreaterThanOrEqual(before)
+  })
+
+  it('round-trips savedAt so offline catch-up can measure elapsed time', () => {
+    const state = createInitialState()
+    const migrated = migrate({ version: SAVE_VERSION, savedAt: 1_000_000, state })
+    expect(migrated).not.toBeNull()
+    expect(migrated!.savedAt).toBe(1_000_000)
   })
 
   it('returns null when nothing is saved', () => {
@@ -50,7 +70,7 @@ describe('persistence — migrate guard', () => {
     expect(load()).toBeNull()
   })
 
-  it('rejects a mismatched version', () => {
+  it('rejects an unknown (future) version', () => {
     localStorage.setItem(
       SAVE_KEY,
       JSON.stringify({ version: SAVE_VERSION + 1, state: createInitialState() }),
@@ -83,7 +103,78 @@ describe('persistence — migrate guard', () => {
     const state = createInitialState()
     const migrated = migrate({ version: SAVE_VERSION, state })
     expect(migrated).not.toBeNull()
-    expect(migrated!.unlocked).not.toBe(state.unlocked)
-    expect(migrated!.bought).not.toBe(state.bought)
+    expect(migrated!.state.unlocked).not.toBe(state.unlocked)
+    expect(migrated!.state.bought).not.toBe(state.bought)
+  })
+})
+
+describe('persistence — v1 → v2 migration', () => {
+  it('accepts a v1 envelope and defaults savedAt to now (no offline grant)', () => {
+    const before = Date.now()
+    // v1 had no savedAt field.
+    const migrated = migrate({ version: 1, state: { ...createInitialState(), money: 42 } })
+    expect(migrated).not.toBeNull()
+    expect(migrated!.state.money).toBe(42)
+    expect(migrated!.savedAt).toBeGreaterThanOrEqual(before)
+  })
+
+  it('reads a legacy v1 save from the old key when the current slot is empty', () => {
+    localStorage.setItem(
+      'sc2000:save:v1',
+      JSON.stringify({ version: 1, state: { ...createInitialState(), time: 500 } }),
+    )
+    const loaded = load()
+    expect(loaded).not.toBeNull()
+    expect(loaded!.state.time).toBe(500)
+  })
+})
+
+describe('persistence — export / import round trip', () => {
+  it('exports to base64 and imports back to an identical state', () => {
+    const state: GameState = {
+      ...createInitialState(),
+      money: 9876.54,
+      time: 4242,
+      unlocked: { 'warm-coat': true },
+      bought: { progrm: true },
+      pause: true,
+    }
+    const blob = exportSave(state)
+    expect(typeof blob).toBe('string')
+    expect(blob.length).toBeGreaterThan(0)
+
+    const imported = importSave(blob)
+    expect(imported).not.toBeNull()
+    expect(imported!.money).toBe(9876.54)
+    expect(imported!.time).toBe(4242)
+    expect(imported!.unlocked).toEqual({ 'warm-coat': true })
+    expect(imported!.bought).toEqual({ progrm: true })
+    expect(imported!.pause).toBe(true)
+  })
+
+  it('tolerates surrounding whitespace on import', () => {
+    const blob = exportSave(createInitialState())
+    expect(importSave(`\n  ${blob}\t `)).not.toBeNull()
+  })
+
+  it('returns null for garbage / non-base64 input', () => {
+    expect(importSave('not a real save code')).toBeNull()
+    expect(importSave('')).toBeNull()
+  })
+
+  it('returns null for base64 that is not a valid save envelope', () => {
+    const bogus = btoa(JSON.stringify({ hello: 'world' }))
+    expect(importSave(bogus)).toBeNull()
+  })
+})
+
+describe('persistence — clearSave', () => {
+  it('removes both the current and legacy save slots', () => {
+    save(createInitialState())
+    localStorage.setItem('sc2000:save:v1', JSON.stringify({ version: 1, state: createInitialState() }))
+    clearSave()
+    expect(localStorage.getItem(SAVE_KEY)).toBeNull()
+    expect(localStorage.getItem('sc2000:save:v1')).toBeNull()
+    expect(load()).toBeNull()
   })
 })

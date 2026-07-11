@@ -32,4 +32,4 @@ export {
 } from './tabs'
 
 // UI
-export { Lock, Ban, ArrowUp, ArrowDown, Brain } from './ui'
+export { Lock, Ban, ArrowUp, ArrowDown, Brain, Gear } from './ui'

@@ -126,3 +126,21 @@ button {
   background: color-mix(in srgb, var(--danger) 16%, var(--surface-2));
   border-color: var(--danger);
 }
+
+/* Square icon-only button (e.g. the header settings gear). */
+.btn--icon {
+  padding: var(--sp-2);
+}
+
+/* Inline keyboard-key hint, e.g. the "Space" badge on Basic Work. */
+kbd {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  line-height: 1;
+  padding: 2px 5px;
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  color: var(--text-dim);
+}
