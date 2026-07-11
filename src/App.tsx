@@ -3,12 +3,12 @@
  * layout (header · character slot · stats · thoughts · tabs · death modal).
  *
  * `useGameLoop` must run inside `GameProvider`, so the running game lives in an
- * inner `Game` component. The `CharacterCanvas` slot is a placeholder until
- * step 7 fills it in.
+ * inner `Game` component.
  */
 
 import './styles/index.css'
 import { Gallery } from './components/icons/Gallery'
+import { CharacterCanvas } from './components/CharacterCanvas'
 import { DeathModal } from './components/DeathModal'
 import { Header } from './components/Header'
 import { StatsPanel } from './components/StatsPanel'
@@ -26,10 +26,7 @@ function Game() {
       <Header />
       <div className="app__body">
         <aside className="app__side">
-          {/* CharacterCanvas slot (step 7). */}
-          <div className="character-slot" aria-hidden="true">
-            <span className="character-slot__label">Character</span>
-          </div>
+          <CharacterCanvas />
           <StatsPanel />
           <ThoughtsLog />
         </aside>
