@@ -62,6 +62,51 @@ export interface Appearance {
   damage: number
 }
 
+/**
+ * Per-frame *animation* signals layered on top of {@link Appearance}.
+ *
+ * Where `Appearance` says *what state the figure is in* (derived, smoothed),
+ * `Motion` carries the live, stateful wiggle that makes it feel alive: the
+ * current breathing phase, blink/eyelid openness, eye direction, the exhaustion
+ * head-nod, the idle weight-shift, belly jiggle, and the spring-eased collapse
+ * amount. It is produced by the animation layer (`render/animation.ts`) and
+ * consumed only by {@link drawCharacter}; keeping it separate leaves
+ * `deriveAppearance` pure and snapshot-testable.
+ */
+export interface Motion {
+  /** Breathing signal −1…1 from an accumulated phase (no jumps on rate change). */
+  breath: number
+  /** Eyelid openness 0 (shut) … 1 (wide), folding blinks + tired droop. */
+  eyeOpen: number
+  /** Horizontal eye/gaze direction −1…1. */
+  gazeX: number
+  /** Vertical eye/gaze direction −1…1. */
+  gazeY: number
+  /** Extra downward head tilt (radians) — exhaustion nodding-off. */
+  headNod: number
+  /** Horizontal weight-shift / tremble offset in design px. */
+  swayX: number
+  /** Belly jiggle offset in design px (lags the body's sway). */
+  bellyWobble: number
+  /** Spring-eased collapse amount 0…~1 (animated fall + settle). */
+  collapse: number
+}
+
+/** A still, neutral pose — used when {@link drawCharacter} is called bare. */
+export const NEUTRAL_MOTION: Motion = {
+  breath: 0,
+  eyeOpen: 1,
+  gazeX: 0,
+  gazeY: 0,
+  headNod: 0,
+  swayX: 0,
+  bellyWobble: 0,
+  collapse: 0,
+}
+
+/** Reused left/right iteration order — avoids a per-frame array allocation. */
+const DIRS = [-1, 1] as const
+
 /** Clamp a number into the inclusive `[0, 1]` range. */
 function clamp01(n: number): number {
   if (n < 0) return 0
@@ -72,6 +117,13 @@ function clamp01(n: number): number {
 /** Linear interpolation between `a` and `b` by `t` (unclamped). */
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t
+}
+
+/** Smooth Hermite ease of `x` across the `[edge0, edge1]` range → `[0, 1]`. */
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  if (edge0 === edge1) return x < edge0 ? 0 : 1
+  const k = clamp01((x - edge0) / (edge1 - edge0))
+  return k * k * (3 - 2 * k)
 }
 
 /** Safe `value / cap` clamped to `[0, 1]`; guards a non-positive cap. */
@@ -214,12 +266,19 @@ function roundRect(
 /**
  * Paint the character. Layout happens in a fixed {@link BOX_W}×{@link BOX_H}
  * design space that is centred and scaled to fill the current context, so the
- * figure looks the same at any canvas size. All motion derives from `t`.
+ * figure looks the same at any canvas size.
+ *
+ * `t` (seconds) drives the cheap, purely-periodic motion (shiver, sweat drips,
+ * breath fog). The stateful, organic motion — breathing phase, blinks, gaze,
+ * the exhaustion nod, idle sway, belly jiggle and the spring-eased collapse —
+ * arrives pre-computed in {@link Motion}; when omitted the figure stands in a
+ * still {@link NEUTRAL_MOTION} pose.
  */
 export function drawCharacter(
   ctx: CanvasRenderingContext2D,
   appearance: Appearance,
   t: number,
+  motion: Motion = NEUTRAL_MOTION,
 ): void {
   const { w, h } = logicalSize(ctx)
   if (!w || !h) return
@@ -237,7 +296,14 @@ export function drawCharacter(
   skin = mix(skin, [188, 158, 138], appearance.dryness * 0.18)
 
   const outline = rgb(mix(skin, [40, 30, 26], 0.55))
-  const shiver = appearance.cold * Math.sin(t * 34) * 1.6
+  // Shivering: two detuned sines give a nervous "chatter" rather than a hum;
+  // amplitude scales hard with cold so it reads as violent shaking near-lethal.
+  const shiver = appearance.cold * (Math.sin(t * 34) * 0.7 + Math.sin(t * 57) * 0.3) * 1.9
+
+  const breath = motion.breath
+  const collapse = clamp01(motion.collapse)
+  const cx = BOX_W / 2
+  const feetY = 216
 
   ctx.save()
   // Centre the design box in the surface, then apply the fit scale.
@@ -245,29 +311,54 @@ export function drawCharacter(
   ctx.scale(scale, scale)
   ctx.translate(-BOX_W / 2, -BOX_H / 2)
 
-  // Collapse: rotate the whole figure down around the feet.
-  if (appearance.collapse > 0) {
-    const pivotX = BOX_W / 2
-    const pivotY = 224
-    ctx.translate(pivotX, pivotY)
-    ctx.rotate(appearance.collapse * (Math.PI / 2) * 0.92)
-    ctx.translate(-pivotX, -pivotY)
+  /* Ground shadow — stays on the floor; widens & flattens as the figure falls,
+     and slides a touch with the weight-shift so the body feels grounded. */
+  {
+    const shadowW = 44 * (1 + collapse * 0.55)
+    const shadowH = 7 * (1 - collapse * 0.3)
+    ctx.beginPath()
+    ctx.ellipse(cx + motion.swayX * 0.5, 227, shadowW, shadowH, 0, 0, Math.PI * 2)
+    ctx.fillStyle = rgb([0, 0, 0], 0.2 + collapse * 0.05)
+    ctx.fill()
   }
 
-  ctx.translate(shiver, 0)
+  // Vomit choreography, read straight from the decaying cue (1 → 0):
+  //   ~1.00–0.75  anticipation heave (lean in, chest coils)
+  //   ~0.75–0.05  the stream flows and the head recoils back
+  const vomit = appearance.vomit
+  const heave = smoothstep(0.75, 1, vomit)
+  const recoil = smoothstep(0.7, 0.2, vomit)
+  const bodyLean = heave * 0.13 - recoil * 0.05
 
-  const cx = BOX_W / 2
-  // Breathing raises the chest a touch and swells the torso.
-  const breath = Math.sin(t * appearance.breathRate * Math.PI * 2)
+  ctx.save()
+  // Collapse: rotate the whole figure down around the feet (spring-eased amount
+  // gives an animated fall that overshoots slightly and settles).
+  if (collapse > 0.001) {
+    ctx.translate(cx, 224)
+    ctx.rotate(collapse * (Math.PI / 2) * 0.92)
+    ctx.translate(-cx, -224)
+  }
+
+  // Weight-shift / tremble slides the body; a matching lean rotates it about
+  // the feet so the sway looks like shifting balance, not sliding on ice.
+  ctx.translate(shiver + motion.swayX, 0)
+  ctx.translate(cx, feetY)
+  ctx.rotate(motion.swayX * 0.004 + bodyLean)
+  ctx.translate(-cx, -feetY)
+
   const breathRise = breath * appearance.breathDepth * 3
   const chestSwell = (breath * 0.5 + 0.5) * appearance.breathDepth
   // Low energy slumps the shoulders / head downward.
   const slump = appearance.droop * 10
+  // Heavy panting (spent stamina) hunches the shoulders forward; low health
+  // adds a frail hunch of its own.
+  const pant = clamp01((appearance.breathDepth - 0.55) / 0.45)
+  const hunch = pant * 5 + smoothstep(0.4, 0, appearance.vitality) * 6
 
   ctx.lineJoin = 'round'
   ctx.lineCap = 'round'
 
-  const shoulderY = 96 + slump - breathRise
+  const shoulderY = 96 + slump + hunch - breathRise
   const hipY = 150
 
   /* Legs */
@@ -275,22 +366,24 @@ export function drawCharacter(
   ctx.fillStyle = rgb(skin)
   ctx.lineWidth = 3
   const legW = 15
-  const feetY = 216
-  for (const dir of [-1, 1]) {
+  for (const dir of DIRS) {
     const lx = cx + dir * 16 - legW / 2
     roundRect(ctx, lx, hipY - 6, legW, feetY - (hipY - 6), 8)
     ctx.fill()
     ctx.stroke()
   }
 
-  /* Arms — hang lower and swing slightly as posture slumps */
+  /* Arms — hang lower and swing slightly as posture slumps; the trailing arm
+     counter-swings with the weight-shift for a little life. */
   const armW = 12
   const armLen = 62 + slump * 0.4
-  for (const dir of [-1, 1]) {
+  for (const dir of DIRS) {
     ctx.save()
     const shoulderX = cx + dir * 30
     ctx.translate(shoulderX, shoulderY + 6)
-    ctx.rotate(dir * (0.12 + appearance.droop * 0.1) + breath * 0.02 * dir)
+    ctx.rotate(
+      dir * (0.12 + appearance.droop * 0.1) + breath * 0.02 * dir + motion.swayX * 0.01 * dir,
+    )
     roundRect(ctx, -armW / 2, 0, armW, armLen, 6)
     ctx.fill()
     ctx.stroke()
@@ -306,11 +399,21 @@ export function drawCharacter(
   ctx.fill()
   ctx.stroke()
 
-  /* Belly — an ellipse that grows with stomach fullness */
+  /* Belly — an ellipse that grows with stomach fullness and jiggles: it lags
+     the body's sway (`bellyWobble`) and squashes/stretches with that offset. */
   if (appearance.belly > 0.02) {
+    const wob = motion.bellyWobble
     const bellyR = 12 + appearance.belly * 22
     ctx.beginPath()
-    ctx.ellipse(cx, hipY - 6, bellyR, bellyR * 0.85, 0, 0, Math.PI * 2)
+    ctx.ellipse(
+      cx + wob,
+      hipY - 6 + Math.abs(wob) * 0.12,
+      bellyR + wob * 0.2,
+      bellyR * 0.85 - Math.abs(wob) * 0.12,
+      0,
+      0,
+      Math.PI * 2,
+    )
     ctx.fillStyle = rgb(mix(skin, [40, 30, 26], 0.08))
     ctx.fill()
     ctx.stroke()
@@ -322,11 +425,15 @@ export function drawCharacter(
   ctx.fill()
   ctx.stroke()
 
-  /* Head */
+  /* Head — bobs gently with the breath and droops with the exhaustion nod. */
   const headR = 30
-  const headY = torsoTop - 14 - headR + 4 + slump * 0.2
+  const headBob = breath * 1.2
+  const nodDrop = motion.headNod * 55
+  const headY = torsoTop - 14 - headR + 4 + slump * 0.2 + headBob + nodDrop
+  // Recoil nudges the head backward (up) as the stream flows.
+  const headX = cx - recoil * 3
   ctx.beginPath()
-  ctx.arc(cx, headY, headR, 0, Math.PI * 2)
+  ctx.arc(headX, headY, headR, 0, Math.PI * 2)
   ctx.fillStyle = rgb(skin)
   ctx.fill()
   ctx.stroke()
@@ -334,30 +441,28 @@ export function drawCharacter(
   /* Cheeks — flushed when hot, bluish nose-tip when cold */
   if (appearance.hot > 0.05) {
     ctx.fillStyle = rgb([220, 90, 80], 0.35 * appearance.hot)
-    for (const dir of [-1, 1]) {
+    for (const dir of DIRS) {
       ctx.beginPath()
-      ctx.ellipse(cx + dir * 15, headY + 6, 7, 5, 0, 0, Math.PI * 2)
+      ctx.ellipse(headX + dir * 15, headY + 6, 7, 5, 0, 0, Math.PI * 2)
       ctx.fill()
     }
   }
   if (appearance.cold > 0.05) {
     ctx.fillStyle = rgb([120, 160, 220], 0.5 * appearance.cold)
     ctx.beginPath()
-    ctx.ellipse(cx, headY + 10, 4, 3, 0, 0, Math.PI * 2)
+    ctx.ellipse(headX, headY + 10, 4, 3, 0, 0, Math.PI * 2)
     ctx.fill()
   }
 
-  /* Eyes — blink periodically; droop keeps them half-lidded */
+  /* Eyes — openness comes from the blink/lid model; the pupils track gaze. */
   const eyeY = headY - 4
   const eyeDX = 11
   const eyeR = 5
-  // Blink: brief closure every ~4s.
-  const blinkCycle = t % 4
-  const blinking = blinkCycle < 0.14
-  const openBase = clamp01(1 - appearance.droop * 0.7)
-  const open = blinking ? 0.05 : Math.max(0.05, openBase)
-  for (const dir of [-1, 1]) {
-    const ex = cx + dir * eyeDX
+  const open = Math.max(0.04, motion.eyeOpen)
+  const gx = motion.gazeX * eyeR * 0.55
+  const gy = motion.gazeY * eyeR * open * 0.6
+  for (const dir of DIRS) {
+    const ex = headX + dir * eyeDX
     // Eye white / socket.
     ctx.fillStyle = rgb([250, 250, 250])
     ctx.beginPath()
@@ -366,51 +471,69 @@ export function drawCharacter(
     ctx.strokeStyle = outline
     ctx.lineWidth = 1.5
     ctx.stroke()
-    // Pupil (only when reasonably open).
+    // Pupil (only when reasonably open) — follows the gaze direction.
     if (open > 0.25) {
       ctx.fillStyle = rgb([40, 34, 30])
       ctx.beginPath()
-      ctx.arc(ex, eyeY, eyeR * 0.5, 0, Math.PI * 2)
+      ctx.arc(ex + gx, eyeY + gy, eyeR * 0.5, 0, Math.PI * 2)
       ctx.fill()
     }
   }
   ctx.lineWidth = 3
   ctx.strokeStyle = outline
 
-  /* Mouth — expression shifts with distress (pallor / temp / vomit) */
+  /* Mouth — neutral smile → frown with distress, an open pant when winded, a
+     wide "O" mid-heave. */
   const mouthY = headY + 15
   const distress = clamp01(appearance.pallor * 0.6 + appearance.hot * 0.4 + appearance.cold * 0.4)
-  ctx.beginPath()
-  if (appearance.vomit > 0.05) {
-    // Open mouth mid-heave.
-    ctx.ellipse(cx, mouthY, 6, 6, 0, 0, Math.PI * 2)
+  const panting = pant * clamp01(appearance.droop * 1.4 + 0.15)
+  if (vomit > 0.05) {
+    // Open mouth mid-heave, widening with the anticipation.
+    const r = 5 + heave * 3
+    ctx.beginPath()
+    ctx.ellipse(headX, mouthY, r * 0.9, r, 0, 0, Math.PI * 2)
+    ctx.fillStyle = rgb([90, 40, 40], 0.55)
+    ctx.fill()
+    ctx.stroke()
+  } else if (panting > 0.2) {
+    // Panting: the mouth gapes open on the inhale.
+    const openAmt = 2 + panting * 5 * (0.55 + 0.45 * breath)
+    ctx.beginPath()
+    ctx.ellipse(headX, mouthY + 1, 5, openAmt, 0, 0, Math.PI * 2)
+    ctx.fillStyle = rgb([90, 40, 40], 0.4)
+    ctx.fill()
+    ctx.stroke()
   } else {
     // Smile when healthy, frown when distressed.
     const curve = lerp(6, -6, distress)
-    ctx.moveTo(cx - 8, mouthY)
-    ctx.quadraticCurveTo(cx, mouthY + curve, cx + 8, mouthY)
-  }
-  ctx.stroke()
-
-  /* Sweat drops — trickle down when hot */
-  const sweatN = Math.round(appearance.hot * 4)
-  ctx.fillStyle = rgb([120, 190, 235], 0.85)
-  for (let i = 0; i < sweatN; i++) {
-    const phase = (t * 0.6 + i * 0.37) % 1
-    const sx = cx + (i % 2 === 0 ? -1 : 1) * (18 + (i % 3) * 3)
-    const sy = headY - 18 + phase * 44
     ctx.beginPath()
-    ctx.ellipse(sx, sy, 2.2, 3.2, 0, 0, Math.PI * 2)
+    ctx.moveTo(headX - 8, mouthY)
+    ctx.quadraticCurveTo(headX, mouthY + curve, headX + 8, mouthY)
+    ctx.stroke()
+  }
+
+  /* Sweat drops — bead near the brow then drip with gravity (accelerating,
+     drifting a little), fading as they fall. */
+  const sweatN = Math.round(appearance.hot * 5)
+  for (let i = 0; i < sweatN; i++) {
+    const phase = (t * 0.55 + i * 0.31) % 1
+    const g = phase * phase // gravitational acceleration down the face
+    const sx = headX + (i % 2 === 0 ? -1 : 1) * (15 + (i % 3) * 4) + Math.sin(phase * 6 + i) * 1.2
+    const sy = headY - 20 + g * 52
+    ctx.fillStyle = rgb([120, 190, 235], 0.85 * (1 - g * 0.25))
+    ctx.beginPath()
+    ctx.ellipse(sx, sy, 2.1 + phase * 0.7, 3 + phase * 1.4, 0, 0, Math.PI * 2)
     ctx.fill()
   }
 
-  /* Breath puffs — fog exhaled when cold */
+  /* Breath puffs — fog exhaled when cold, timed to the exhale (breath falling
+     through zero) so it looks like actual breathing. */
   if (appearance.cold > 0.15) {
     const period = 2.4
     for (let i = 0; i < 2; i++) {
       const phase = ((t + i * (period / 2)) % period) / period
       const alpha = (1 - phase) * 0.4 * appearance.cold
-      const px = cx + 10 + phase * 26
+      const px = headX + 10 + phase * 26
       const py = mouthY + 2 - phase * 10
       ctx.fillStyle = rgb([235, 240, 250], alpha)
       ctx.beginPath()
@@ -419,14 +542,15 @@ export function drawCharacter(
     }
   }
 
-  /* Vomit — greenish stream from the mouth while the cue is active */
-  if (appearance.vomit > 0.05) {
-    const n = 6
+  /* Vomit — greenish stream arcing from the mouth while the cue is active. */
+  if (vomit > 0.05) {
+    const n = 7
+    const flow = smoothstep(0.05, 0.6, vomit)
     for (let i = 0; i < n; i++) {
-      const phase = (t * 1.6 + i * 0.18) % 1
-      const vx = cx + Math.sin(i * 1.7) * 6
-      const vy = mouthY + 4 + phase * 40
-      ctx.fillStyle = rgb([120, 170, 70], appearance.vomit * (1 - phase))
+      const phase = (t * 1.6 + i * 0.16) % 1
+      const vx = headX + Math.sin(i * 1.7) * 6 + phase * 3
+      const vy = mouthY + 4 + phase * phase * 44
+      ctx.fillStyle = rgb([120, 170, 70], vomit * flow * (1 - phase))
       ctx.beginPath()
       ctx.ellipse(vx, vy, 3 + phase * 2, 4 + phase * 3, 0, 0, Math.PI * 2)
       ctx.fill()
@@ -434,12 +558,14 @@ export function drawCharacter(
   }
 
   ctx.restore()
+  ctx.restore()
 
   /* Damage flash — a brief red wash over the whole surface */
   if (appearance.damage > 0.01) {
     ctx.save()
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.fillStyle = rgb([255, 60, 60], appearance.damage * 0.35)
-    ctx.fillRect(0, 0, w, h)
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height)
     ctx.restore()
   }
 }

@@ -17,6 +17,7 @@
  */
 
 import { useEffect, useRef } from 'react'
+import { createMotionState, smoothAppearance, stepMotion } from '../game/render/animation'
 import { deriveAppearance, drawCharacter } from '../game/render/character'
 import { useGame } from '../store/GameContext'
 import type { StoreState } from '../store/gameReducer'
@@ -77,6 +78,11 @@ export function CharacterCanvas() {
     // Last written frame-cue attribute, to avoid redundant DOM writes.
     let frameFlash = ''
 
+    // Persistent animation state: the smoothed appearance (so state changes
+    // ease in) and the involuntary-motion bag (blinks, sway, springs, …).
+    const motion = createMotionState()
+    let smoothed = deriveAppearance(stateRef.current.game)
+
     const startMs = performance.now()
     let lastMs = startMs
 
@@ -129,19 +135,24 @@ export function CharacterCanvas() {
         }
       }
 
-      const appearance = deriveAppearance(g)
-      appearance.vomit = vomitCue
-      appearance.damage = damageCue
+      const target = deriveAppearance(g)
+      target.vomit = vomitCue
+      target.damage = damageCue
       // While a death summary awaits acknowledgement, hold the collapse pose
       // (the engine has already reset `game` to a fresh, healthy state).
       if (store.death !== null) {
-        appearance.dead = true
-        appearance.collapse = 1
+        target.dead = true
+        target.collapse = 1
       }
+
+      // Ease the slow look params toward the target, then advance the live
+      // involuntary motion; draw the smoothed appearance with that motion.
+      smoothed = smoothAppearance(smoothed, target, dt)
+      const m = stepMotion(motion, smoothed, dt, t)
 
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr)
-      drawCharacter(ctx, appearance, t)
+      drawCharacter(ctx, smoothed, t, m)
 
       raf = requestAnimationFrame(loop)
     }
