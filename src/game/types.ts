@@ -119,13 +119,20 @@ export interface Tab {
  *
  * - `TICK`         — advance one 1s simulation step.
  * - `APPLY_ITEM`   — apply an item's cost/effects/set + unlock/buy chains.
+ * - `UNLOCK_TAB`   — pay a tab's one-time entry fee (`unlockCost`) and reveal it.
  * - `TOGGLE_PAUSE` — flip `pause`.
  * - `RESET`        — reset to a fresh initial state (was the "Suicide" button).
  * - `LOAD`         — replace state with a loaded/migrated save.
+ * - `DISMISS_DEATH`— clear the pending death summary (closes the death modal).
+ *
+ * `UNLOCK_TAB` / `DISMISS_DEATH` are store-layer additions sanctioned by the
+ * TODO.md cleanup section (tab entry fees → one-time unlock; `alert` → modal).
  */
 export type GameAction =
   | { type: 'TICK' }
   | { type: 'APPLY_ITEM'; item: Item }
+  | { type: 'UNLOCK_TAB'; tab: Tab }
   | { type: 'TOGGLE_PAUSE' }
   | { type: 'RESET' }
   | { type: 'LOAD'; state: GameState }
+  | { type: 'DISMISS_DEATH' }
